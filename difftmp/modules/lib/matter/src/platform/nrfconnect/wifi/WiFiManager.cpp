@@ -156,6 +156,14 @@ void WiFiManager::WifiMgmtEventHandler(net_mgmt_event_callback * cb, uint32_t mg
     }
 }
 
+void WiFiManager::IPv6MgmtEventHandler(net_mgmt_event_callback * cb, uint32_t mgmtEvent, net_if * iface)
+{
+    if (((mgmtEvent == NET_EVENT_IPV6_ADDR_ADD) || (mgmtEvent == NET_EVENT_IPV6_ADDR_DEL)) && cb->info)
+    {
+        IPv6AddressChangeHandler(cb->info);
+    }
+}
+
 CHIP_ERROR WiFiManager::Init()
 {
     // TODO: consider moving these to ConnectivityManagerImpl to be prepared for handling multiple interfaces on a single device.
@@ -188,7 +196,10 @@ CHIP_ERROR WiFiManager::Init()
     });
 
     net_mgmt_init_event_callback(&mWiFiMgmtClbk, WifiMgmtEventHandler, kWifiManagementEvents);
+    net_mgmt_init_event_callback(&mIPv6MgmtClbk, IPv6MgmtEventHandler, kIPv6ManagementEvents);
+
     net_mgmt_add_event_callback(&mWiFiMgmtClbk);
+    net_mgmt_add_event_callback(&mIPv6MgmtClbk);
 
     ChipLogDetail(DeviceLayer, "WiFiManager has been initialized");
 
@@ -352,6 +363,7 @@ void WiFiManager::ScanResultHandler(Platform::UniquePtr<uint8_t> data)
             Instance().mWiFiParams.mParams.timeout = Instance().mHandling.mConnectionTimeout.count();
             Instance().mWiFiParams.mParams.channel = WIFI_CHANNEL_ANY;
             Instance().mWiFiParams.mRssi           = scanResult->rssi;
+            Instance().mWiFiParams.mParams.band    = WIFI_FREQ_BAND_UNKNOWN;
             Instance().mSsidFound                  = true;
         }
     }
@@ -506,6 +518,25 @@ void WiFiManager::DisconnectHandler(Platform::UniquePtr<uint8_t>)
         Instance().mWiFiState = WIFI_STATE_DISCONNECTED;
         Instance().PostConnectivityStatusChange(kConnectivity_Lost);
     });
+}
+
+void WiFiManager::IPv6AddressChangeHandler(const void * data)
+{
+    const in6_addr * addr = reinterpret_cast<const in6_addr *>(data);
+
+    // Filter out link-local addresses that are not routable outside of a local network.
+    if (!net_ipv6_is_ll_addr(addr))
+    {
+        // This is needed to send mDNS queries containing updated IPv6 addresses.
+        ChipDeviceEvent event;
+        event.Type = DeviceEventType::kDnssdRestartNeeded;
+
+        CHIP_ERROR error = PlatformMgr().PostEvent(&event);
+        if (error != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "Cannot post event: %" CHIP_ERROR_FORMAT, error.Format());
+        }
+    }
 }
 
 WiFiManager::StationStatus WiFiManager::GetStationStatus() const

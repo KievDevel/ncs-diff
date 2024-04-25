@@ -50,15 +50,15 @@ const resForDifferentSize = {
 
 try {
     resForDifferentSize.diffSet.map((diff) => {
-        return fs.mkdirSync(`difftmp/${diff.path1.replace(path1, '')}`, { recursive: true }, () => {});
+        return fs.mkdirSync(`difftmp/${diff.path2.replace(path2, '')}`, { recursive: true }, () => {});
     });
 
     // await Promise.all(createFoldersPromises);
 
     resForDifferentSize.diffSet.forEach((diff) => {
         fs.copyFileSync(
-            `${diff.path1}/${diff.name1}`,
-            `difftmp/${diff.path1.replace(path1, '')}/${diff.name1}`,
+            `${diff.path2}/${diff.name2}`,
+            `difftmp/${diff.path2.replace(path2, '')}/${diff.name2}`,
             COPYFILE_EXCL
         )
     })
