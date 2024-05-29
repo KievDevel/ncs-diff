@@ -279,9 +279,9 @@ console.log('Size: ', resFiltered.diffSet.length);
 
 // copy files that are different (in size)
 try {
-    const pathNumber = 'path1';
-    const nameNumber = 'name1';
-    const path = path1;
+    const pathNumber = 'path2';
+    const nameNumber = 'name2';
+    const path = path2;
 
     const resForDifferentSize = {
         ...resFiltered,
