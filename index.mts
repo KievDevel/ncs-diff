@@ -126,10 +126,10 @@ const nameFilter = [
     'Jenkinsfile',
 
     // todo: maybe we want see them? ignored for now as there are lot of them
-    'Kconfig', // exclude all Kconfig(s);
-    'CMakeLists',
-    'Makefile',
-    '.mk', // other makefiles
+    // 'Kconfig', // exclude all Kconfig(s);
+    // 'CMakeLists',
+    // 'Makefile',
+    // '.mk', // other makefiles
 
     '.dts', // device tree files
 
