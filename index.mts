@@ -126,10 +126,10 @@ const nameFilter = [
     'Jenkinsfile',
 
     // todo: maybe we want see them? ignored for now as there are lot of them
-    'Kconfig', // exclude all Kconfig(s);
-    'CMakeLists',
-    'Makefile',
-    '.mk', // other makefiles
+    // 'Kconfig', // exclude all Kconfig(s);
+    // 'CMakeLists',
+    // 'Makefile',
+    // '.mk', // other makefiles
 
     '.dts', // device tree files
 
@@ -226,7 +226,7 @@ resFiltered.diffSet.map(d => {
     }
 })
 
-fs.writeFileSync('result-pathTokens.json', JSON.stringify([...pathTokens].sort()));
+// fs.writeFileSync('result-pathTokens.json', JSON.stringify([...pathTokens].sort()));
 fs.writeFileSync('result-leftExtensions.json', JSON.stringify([...leftExtensions].sort()));
 fs.writeFileSync('result.json', JSON.stringify(resFiltered), (err: any) => {
     if (err) {
@@ -245,55 +245,65 @@ console.log('Without extension count: ', withoutExtensionCount);
 console.log('Size: ', resFiltered.diffSet.length);
 
 // copy files that are different from path 1
+// try {
+//
+//     const resForCopyFiles = {
+//         ...resFiltered,
+//         diffSet: resFiltered.diffSet
+//     }
+//
+//     resForCopyFiles.diffSet.map((diff) => {
+//         if (! diff.path2) return;
+//
+//         return fs.mkdirSync(`difftmp/${diff.relativePath}`, { recursive: true });
+//     });
+//
+//     resForCopyFiles.diffSet.map(async (diff) => {
+//         if (! diff.path2) return;
+//
+//         try {
+//             fs.copyFileSync(
+//                 `${diff.path2}/${diff.name2}`,
+//                 `./difftmp${diff.relativePath}/${diff.name2}`,
+//                 COPYFILE_EXCL
+//             )
+//         } catch (e) {
+//             // continue; will fail on symlinks
+//         }
+//     })
+// } catch (e) {
+//     console.error('Dirs creation error: ', e);
+//     throw e;
+// }
+
+
+// copy files that are different (in size)
 try {
+    const pathNumber = 'path1';
+    const nameNumber = 'name1';
+    const path = path1;
 
-    const resForCopyFiles = {
-        ...resFiltered,
-        diffSet: resFiltered.diffSet
-    }
-
-    resForCopyFiles.diffSet.map((diff) => {
-        if (! diff.path2) return;
-
-        return fs.mkdirSync(`difftmp/${diff.relativePath}`, { recursive: true });
-    });
-
-    resForCopyFiles.diffSet.map(async (diff) => {
-        if (! diff.path2) return;
-
-        try {
-            fs.copyFileSync(
-                `${diff.path2}/${diff.name2}`,
-                `./difftmp${diff.relativePath}/${diff.name2}`,
-                COPYFILE_EXCL
-            )
-        } catch (e) {
-            // continue; will fail on symlinks
-        }
-    })
-} catch (e) {
-    console.error('Dirs creation error: ', e);
-    throw e;
-}
-
-process.exit(1);
-// copy files that are different in size
-try {
     const resForDifferentSize = {
         ...resFiltered,
-        diffSet: resFiltered.diffSet.filter(d => d.reason === "different-size")
+        // diffSet: resFiltered.diffSet.filter(d => d.reason === "different-size")
     }
 
     resForDifferentSize.diffSet.map((diff) => {
-        return fs.mkdirSync(`difftmp/${diff.path2.replace(path2, '')}`, { recursive: true });
+        if (! diff[pathNumber]) return;
+
+        return fs.mkdirSync(`difftmp/${diff[pathNumber].replace(path, '')}`, { recursive: true });
     });
 
     resForDifferentSize.diffSet.forEach((diff) => {
-        fs.copyFileSync(
-            `${diff.path2}/${diff.name2}`,
-            `difftmp/${diff.path2.replace(path2, '')}/${diff.name2}`,
-            COPYFILE_EXCL
-        )
+        try {
+            fs.copyFileSync(
+                `${diff[pathNumber]}/${diff[nameNumber]}`,
+                `difftmp/${diff[pathNumber].replace(path, '')}/${diff[nameNumber]}`,
+                COPYFILE_EXCL
+            )
+        } catch (e) {
+            // continue; will fail on symlinks or when smth do not exist
+        }
     })
 } catch (e) {
     console.error('Dirs creation error: ', e);
