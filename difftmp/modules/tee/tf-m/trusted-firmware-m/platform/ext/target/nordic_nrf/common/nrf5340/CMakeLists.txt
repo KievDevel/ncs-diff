@@ -10,7 +10,6 @@ cmake_policy(SET CMP0076 NEW)
 set(CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 set(target nrf5340)
-
 add_subdirectory(../core nrf_common)
 
 #========================= Platform Secure ====================================#
@@ -29,26 +28,6 @@ target_compile_definitions(platform_s
     PUBLIC
         NRF_SKIP_FICR_NS_COPY_TO_RAM
 )
-
-#========================= Platform Non-Secure ================================#
-
-target_include_directories(platform_ns
-    PUBLIC
-        .
-)
-
-target_sources(platform_ns
-    PRIVATE
-        ${HAL_NORDIC_PATH}/nrfx/mdk/system_nrf5340_application.c
-)
-
-target_compile_definitions(platform_ns
-    PUBLIC
-        NRF_TRUSTZONE_NONSECURE
-        DOMAIN_NS=1
-)
-
-#========================= Platform BL2 =======================================#
 
 if(BL2)
     target_include_directories(platform_bl2
@@ -72,4 +51,18 @@ endif()
 target_sources(tfm_spm
     PRIVATE
         $<$<OR:$<BOOL:${CONFIG_TFM_FLIH_API}>,$<BOOL:${CONFIG_TFM_SLIH_API}>>:${CMAKE_CURRENT_SOURCE_DIR}/tfm_interrupts.c>
+)
+
+#========================= Files for building NS side platform ================#
+
+install(FILES       nrfx_config_nrf5340_application.h
+                    ns/CMakeLists.txt
+                    config.cmake
+                    cpuarch.cmake
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/nrf5340
+)
+
+install(DIRECTORY    partition
+                     tests
+        DESTINATION  ${INSTALL_PLATFORM_NS_DIR}/common/nrf5340
 )

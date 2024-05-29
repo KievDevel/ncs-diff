@@ -10,10 +10,8 @@ cmake_policy(SET CMP0076 NEW)
 set(CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 set(target nrf91)
-
 add_subdirectory(../core nrf_common)
 
-# Specify the location of platform specific build dependencies.
 #========================= Platform Secure ====================================#
 
 target_include_directories(platform_s
@@ -29,24 +27,6 @@ target_sources(platform_s
 target_compile_definitions(platform_s
     PUBLIC
         NRF_SKIP_FICR_NS_COPY_TO_RAM
-)
-
-#========================= Platform Non-Secure ================================#
-
-target_include_directories(platform_ns
-    PUBLIC
-        .
-)
-
-target_sources(platform_ns
-    PRIVATE
-        ${HAL_NORDIC_PATH}/nrfx/mdk/system_nrf91.c
-)
-
-target_compile_definitions(platform_ns
-    PUBLIC
-        NRF_TRUSTZONE_NONSECURE
-        DOMAIN_NS=1
 )
 
 #========================= Platform BL2 =======================================#
@@ -73,4 +53,17 @@ endif()
 target_sources(tfm_spm
     PRIVATE
         $<$<OR:$<BOOL:${CONFIG_TFM_FLIH_API}>,$<BOOL:${CONFIG_TFM_SLIH_API}>>:${CMAKE_CURRENT_SOURCE_DIR}/tfm_interrupts.c>
+)
+
+#========================= Files for building NS side platform ================#
+
+install(FILES       nrfx_config_nrf91.h
+                    ns/CMakeLists.txt
+                    config.cmake
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/nrf91
+)
+
+install(DIRECTORY    partition
+                     tests
+        DESTINATION  ${INSTALL_PLATFORM_NS_DIR}/common/nrf91
 )

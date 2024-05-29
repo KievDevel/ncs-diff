@@ -244,29 +244,6 @@ config CHIP_WIFI_CONNECTION_RECOVERY_JITTER
 	  a random jitter interval is added to it to avoid periodicity. The random jitter is selected
 	  within range [-JITTER; +JITTER].
 
-config CHIP_ICD_SUBSCRIPTION_HANDLING
-	bool "Enables platform specific handling of ICD subscriptions"
-	help
-	  Enables platform specific implementation that handles ICD subscription requests
-	  and selects subscription report interval value considering maximum interval preferred
-	  by the publisher.
-
-if CHIP_ICD_SUBSCRIPTION_HANDLING
-
-config CHIP_MAX_PREFERRED_SUBSCRIPTION_REPORT_INTERVAL
-	int "Maximum preferred interval of sending subscription reports (s)"
-	default 60
-	help
-	  Provides maximum preferred interval to be used by a publisher for negotiation
-	  of the final maximum subscription report interval, after receiving a subscription
-	  request from the initiator. This value should be selected as a compromise between
-	  keeping the power consumption low due to not sending reports too often, and allowing
-	  the initiator device to detect the publisher absence reasonably fast due to not sending
-	  the reports too rarely. The current algorithm is to select bigger value from the one
-	  requested by the initiator and the one preferred by the publisher.
-
-endif # CHIP_ICD_SUBSCRIPTION_HANDLING
-
 choice CHIP_LAST_FABRIC_REMOVED_ACTION
 	prompt "An action to perform after removing the last fabric"
 	default CHIP_LAST_FABRIC_REMOVED_ERASE_AND_REBOOT
@@ -292,7 +269,7 @@ choice CHIP_LAST_FABRIC_REMOVED_ACTION
 	  rebooting and start the Bluetooth LE advertisement automatically.
 	  The current RAM state will be saved and the new commissioning to the next 
 	  fabric will use the next possible fabric index. This option should not be used for
-	  devices that normally not advertise Bluetooth LE on boot to keep their original 
+	  devices that normally do not advertise Bluetooth LE on boot to keep their original 
 	  behavior.
 
 	config CHIP_LAST_FABRIC_REMOVED_ERASE_ONLY

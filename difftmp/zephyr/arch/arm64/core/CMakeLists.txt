@@ -54,4 +54,12 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   zephyr_cc_option(-moverride=tune=no_ldp_stp_qregs)
 endif()
 
-add_subdirectory_ifdef(CONFIG_SOC_XENVM xen)
+add_subdirectory_ifdef(CONFIG_XEN xen)
+
+if(CONFIG_GEN_SW_ISR_TABLE)
+  if(CONFIG_DYNAMIC_INTERRUPTS)
+    zephyr_linker_sources(RWDATA swi_tables.ld)
+  else()
+    zephyr_linker_sources(RODATA swi_tables.ld)
+  endif()
+endif()

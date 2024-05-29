@@ -85,7 +85,7 @@ config MQTT_HELPER_PAYLOAD_BUFFER_LEN
 
 config MQTT_HELPER_PROVISION_CERTIFICATES
 	bool "Run-time provisioning of certificates"
-	depends on (BOARD_QEMU_X86 || BOARD_NATIVE_POSIX || BOARD_NRF7002DK_NRF5340_CPUAPP) && MQTT_LIB_TLS
+	depends on (BOARD_QEMU_X86 || BOARD_NATIVE_POSIX || BOARD_NRF7002DK_NRF5340_CPUAPP || BOARD_NRF7002DK_NRF5340_CPUAPP_NS) && MQTT_LIB_TLS
 	default y
 	imply MBEDTLS_PEM_CERTIFICATE_FORMAT if MBEDTLS
 	help
@@ -106,6 +106,26 @@ config MQTT_HELPER_CERTIFICATES_FILE
 	  used during run-time provisioning of TLS credentials.
 	  By default, the library expects the credentials to be in
 	  Privacy Enhanced Mail (PEM) format. See "mqtt-certs.h" for a template.
+
+config MQTT_HELPER_LAST_WILL
+	bool "Last will"
+	help
+	  If this option is set a configurable last will topic and message is
+	  provided by the device in the MQTT CONNECT message. Upon a disconnect
+	  from the MQTT broker the broker will publish the last will message
+	  to the last will topic.
+
+if MQTT_HELPER_LAST_WILL
+
+config MQTT_HELPER_LAST_WILL_MESSAGE
+	string "Last will message"
+	default "{\"lastwill\": \"offline\"}"
+
+config MQTT_HELPER_LAST_WILL_TOPIC
+	string "Last will topic"
+	default "lastwilltopic"
+
+endif
 
 module = MQTT_HELPER
 module-str = MQTT helper library

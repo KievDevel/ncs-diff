@@ -38,65 +38,38 @@ C_SOURCES += $(wildcard src/cbor/*.c)
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
 ################################################################################
-# libraries 
-
-
-################################################################################
-# C includes
-C_INCLUDES += -Iinc
-
-# Crypto engine
-ifeq ($(findstring COMPACT25519,$(CRYPTO_ENGINE)),COMPACT25519) 
-C_INCLUDES += -Iexternals/compact25519/src/c25519/ 
-C_INCLUDES += -Iexternals/compact25519/src/ 
-endif
-
-ifeq ($(findstring TINYCRYPT,$(CRYPTO_ENGINE)),TINYCRYPT)
-C_INCLUDES += -Iexternals/tinycrypt/lib/include
-endif
- 
-ifeq ($(findstring MBEDTLS,$(CRYPTO_ENGINE)),MBEDTLS)
-C_INCLUDES += -Iexternals/mbedtls/library 
-C_INCLUDES += -Iexternals/mbedtls/include 
-C_INCLUDES += -Iexternals/mbedtls/include/mbedtls 
-C_INCLUDES += -Iexternals/mbedtls/include/psa 
-endif
-
-# CBOR engine
-ifeq ($(findstring ZCBOR,$(CBOR_ENGINE)),ZCBOR)
-C_INCLUDES += -Iexternals/zcbor/include
-endif
-
-################################################################################
 # CFLAGS
 ################################################################################
 FILTERED_CFLAGS = -Os
 EXTENDED_CFLAGS = $(filter-out $(FILTERED_CFLAGS), $(CFLAGS))
 
 #add options form configuration file 
+EXTENDED_CFLAGS += $(FEATURES)
+EXTENDED_CFLAGS += $(FEATURES)
 EXTENDED_CFLAGS += $(ARCH)
 EXTENDED_CFLAGS += $(OPT)
 EXTENDED_CFLAGS += $(DEBUG_PRINT)
 EXTENDED_CFLAGS += $(CBOR_ENGINE)
 EXTENDED_CFLAGS += $(OSCORE_NVM_SUPPORT)
 EXTENDED_CFLAGS += $(CRYPTO_ENGINE)
-EXTENDED_CFLAGS += $(DUNIT_TEST)
+EXTENDED_CFLAGS += $(UNIT_TEST)
 
 # Unit tests require NVM support regardless of user settings
 ifeq ($(findstring UNIT_TEST,$(DUNIT_TEST)),UNIT_TEST)
 EXTENDED_CFLAGS += -DOSCORE_NVM_SUPPORT
 endif
 
-#add include paths
-EXTENDED_CFLAGS += $(C_INCLUDES)
-
 #generate debug symbols
-EXTENDED_CFLAGS += -g -gdwarf-2
+EXTENDED_CFLAGS += -g3 -gdwarf-4
 
 # Generate dependency information
 EXTENDED_CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
+# Generate stack usage information
+EXTENDED_CFLAGS += -fstack-usage
 
+# use C11
+EXTENDED_CFLAGS += -std=c11
 
 #GCC warning flags
 ifeq ($(findstring cc,$(CC)),cc)
@@ -117,12 +90,12 @@ EXTENDED_CFLAGS += -Wpointer-arith
 EXTENDED_CFLAGS += -Wall
 EXTENDED_CFLAGS += -Wextra
 EXTENDED_CFLAGS += -Wcast-qual
-EXTENDED_CFLAGS += -Wstack-usage=9000
+#EXTENDED_CFLAGS += -Wstack-usage=9000
 EXTENDED_CFLAGS += -Wconversion
 EXTENDED_CFLAGS += -Wpedantic
 #EXTENDED_CFLAGS += -Werror
 
-#Clang warning flahs
+#Clang warning flags
 else ifeq ($(findstring clang,$(CC)),clang)
 EXTENDED_CFLAGS += -Wcast-qual
 EXTENDED_CFLAGS += -Wconversion
@@ -142,11 +115,50 @@ EXTENDED_CFLAGS += -Wconversion
 #EXTENDED_CFLAGS += -Werror
 endif
 
-# use AddressSanitizer to find memory bugs
-# comment this out for better speed
-#EXTENDED_CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-#CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
-#LDFLAGS += -fsanitize=address -static-libasan
+ifeq ($(findstring ASAN,$(ASAN)),ASAN)
+EXTENDED_CFLAGS += -fsanitize=address -fomit-frame-pointer
+endif
+
+ifeq ($(findstring ASAN,$(ASAN)),ASAN)
+EXTENDED_CFLAGS += -fsanitize=address -fomit-frame-pointer
+endif
+
+################################################################################
+# C includes
+################################################################################
+# Set a default crypto engine if non is provided in CRYPTO_ENGINE or CC
+ifneq ($(findstring TINYCRYPT,$(EXTENDED_CFLAGS)),TINYCRYPT) 
+ifneq ($(findstring MBEDTLS,$(EXTENDED_CFLAGS)),MBEDTLS) 
+EXTENDED_CFLAGS += -DTINYCRYPT
+endif
+endif
+
+C_INCLUDES += -Iinc
+
+# Crypto engine
+ifeq ($(findstring COMPACT25519,$(EXTENDED_CFLAGS)),COMPACT25519) 
+C_INCLUDES += -Iexternals/compact25519/src/c25519/ 
+C_INCLUDES += -Iexternals/compact25519/src/ 
+endif
+
+ifeq ($(findstring TINYCRYPT,$(EXTENDED_CFLAGS)),TINYCRYPT)
+C_INCLUDES += -Iexternals/tinycrypt/lib/include
+endif
+ 
+ifeq ($(findstring MBEDTLS,$(EXTENDED_CFLAGS)),MBEDTLS)
+C_INCLUDES += -Iexternals/mbedtls/library 
+C_INCLUDES += -Iexternals/mbedtls/include 
+C_INCLUDES += -Iexternals/mbedtls/include/mbedtls 
+C_INCLUDES += -Iexternals/mbedtls/include/psa 
+endif
+
+# CBOR engine
+ifeq ($(findstring ZCBOR,$(EXTENDED_CFLAGS)),ZCBOR)
+C_INCLUDES += -Iexternals/zcbor/include
+endif
+
+#add include paths
+EXTENDED_CFLAGS += $(C_INCLUDES)
 
 $(info    EXTENDED_CFLAGS are $(EXTENDED_CFLAGS))
 ################################################################################

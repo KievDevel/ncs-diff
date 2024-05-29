@@ -1,10 +1,15 @@
+#
+# Copyright (c) 2023 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+menu "nrf_modem (Modem library)"
+
 # Selected by NRF_MODEM_LIB in sdk-nrf
 config NRF_MODEM
 	bool
-	imply FPU_SHARING
-
-menu "nrf_modem (Modem library)"
-	visible if NRF_MODEM
+	select NRFX_IPC if (SOC_SERIES_NRF91X || ZTEST)
+	select REQUIRES_FULL_LIBC
 
 choice NRF_MODEM_BUILD_STRATEGY
 	depends on NRF_MODEM
@@ -16,7 +21,7 @@ endchoice
 
 config NRF_MODEM_LOG
 	depends on NRF_MODEM_LINK_BINARY
-	bool "Use version of the library with logs"
+	bool "Link binary with logs"
 	help
 	  Links the application with the library version capable of emitting logs.
 	  This increases the final size of the application.

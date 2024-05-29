@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Nordic Semiconductor
+# Copyright (c) 2018-2023 Nordic Semiconductor
 #
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
@@ -28,6 +28,12 @@ endif # BUILD_WITH_TFM
 
 menu "Nordic nRF Connect"
 
+# Hides child parent configuration options
+config HIDE_CHILD_PARENT_CONFIG
+	bool
+	default y if "$(HIDE_CHILD_PARENT_CONFIG)" = "True"
+	default n
+
 # Override boot banner
 config BOOT_BANNER_STRING
 	default "Booting nRF Connect SDK"
@@ -37,23 +43,6 @@ config BOOT_BANNER_STRING
 # get this offset intsead.
 config ROM_START_OFFSET
 	default 0 if PARTITION_MANAGER_ENABLED
-
-#
-# Provide a new choice to override the mbedtls_external library completely
-# and not have to provide a "dummy" path for the implementation
-#
-choice MBEDTLS_IMPLEMENTATION
-	prompt "Select implementation"
-	default MBEDTLS_LIBRARY_NRF_SECURITY
-
-config MBEDTLS_LIBRARY_NRF_SECURITY
-	bool "Use Mbed TLS library from Nordic provided security backend"
-	depends on NORDIC_SECURITY_BACKEND || NRF_SECURITY
-	help
-	  Use external, out-of-tree prebuilt Mbed TLS library. For advanced
-	  users only.
-
-endchoice
 
 # nRF Connect SDK default experimental warnings to on.
 config WARN_EXPERIMENTAL
@@ -97,12 +86,7 @@ config MCUMGR_TRANSPORT_NETBUF_SIZE
 
 # When using HCI on the nRF5340 we need a larger command buffer.
 config BT_BUF_CMD_TX_COUNT
-	default 10 if SOC_NRF5340_CPUAPP || SOC_NRF5340_CPUNET
-
-# Set ENTROPY_GENERATOR to true for TF-M builds with enabled
-# RNG provided from secure services.
-config ENTROPY_GENERATOR
-	default y if BUILD_WITH_TFM
+	default 10 if SOC_COMPATIBLE_NRF5340_CPUAPP || SOC_COMPATIBLE_NRF5340_CPUNET
 
 config INIT_ARCH_HW_AT_BOOT
 	default y

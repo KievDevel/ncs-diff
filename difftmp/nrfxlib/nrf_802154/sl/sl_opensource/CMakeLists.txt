@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2021 - 2023, Nordic Semiconductor ASA
+# Copyright (c) 2021, Nordic Semiconductor ASA
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -48,6 +48,7 @@ target_sources(nrf-802154-sl
     src/nrf_802154_sl_capabilities.c
     src/nrf_802154_sl_coex.c
     src/nrf_802154_sl_crit_sect_if.c
+    src/nrf_802154_sl_ecb.c
     src/nrf_802154_sl_fem.c
     src/nrf_802154_sl_log.c
     src/nrf_802154_sl_rsch.c

@@ -33,6 +33,7 @@ set(COMMON_INCLUDES
 set(COMMON_SOURCES
     api/backbone_router_api.cpp
     api/backbone_router_ftd_api.cpp
+    api/ble_secure_api.cpp
     api/border_agent_api.cpp
     api/border_router_api.cpp
     api/border_routing_api.cpp
@@ -106,7 +107,6 @@ set(COMMON_SOURCES
     common/heap.cpp
     common/heap_data.cpp
     common/heap_string.cpp
-    common/instance.cpp
     common/log.cpp
     common/message.cpp
     common/notifier.cpp
@@ -129,6 +129,7 @@ set(COMMON_SOURCES
     crypto/sha256.cpp
     crypto/storage.cpp
     diags/factory_diags.cpp
+    instance/instance.cpp
     mac/channel_mask.cpp
     mac/data_poll_handler.cpp
     mac/data_poll_sender.cpp
@@ -148,7 +149,6 @@ set(COMMON_SOURCES
     meshcop/dataset_manager.cpp
     meshcop/dataset_manager_ftd.cpp
     meshcop/dataset_updater.cpp
-    meshcop/dtls.cpp
     meshcop/energy_scan_client.cpp
     meshcop/extended_panid.cpp
     meshcop/joiner.cpp
@@ -158,6 +158,8 @@ set(COMMON_SOURCES
     meshcop/meshcop_tlvs.cpp
     meshcop/network_name.cpp
     meshcop/panid_query_client.cpp
+    meshcop/secure_transport.cpp
+    meshcop/tcat_agent.cpp
     meshcop/timestamp.cpp
     net/checksum.cpp
     net/dhcp6_client.cpp
@@ -166,6 +168,7 @@ set(COMMON_SOURCES
     net/dns_dso.cpp
     net/dns_platform.cpp
     net/dns_types.cpp
+    net/dnssd.cpp
     net/dnssd_server.cpp
     net/icmp6.cpp
     net/ip4_types.cpp
@@ -180,11 +183,13 @@ set(COMMON_SOURCES
     net/netif.cpp
     net/sntp_client.cpp
     net/socket.cpp
+    net/srp_advertising_proxy.cpp
     net/srp_client.cpp
     net/srp_server.cpp
     net/tcp6.cpp
     net/tcp6_ext.cpp
     net/udp6.cpp
+    radio/ble_secure.cpp
     radio/radio.cpp
     radio/radio_callbacks.cpp
     radio/radio_platform.cpp
@@ -265,7 +270,6 @@ set(RADIO_COMMON_SOURCES
     common/binary_search.cpp
     common/error.cpp
     common/frame_builder.cpp
-    common/instance.cpp
     common/log.cpp
     common/random.cpp
     common/string.cpp
@@ -277,6 +281,7 @@ set(RADIO_COMMON_SOURCES
     crypto/crypto_platform.cpp
     crypto/storage.cpp
     diags/factory_diags.cpp
+    instance/instance.cpp
     mac/link_raw.cpp
     mac/mac_frame.cpp
     mac/mac_types.cpp

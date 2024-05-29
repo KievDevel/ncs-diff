@@ -3,6 +3,7 @@ zephyr_library_sources(memfault_platform_core.c)
 zephyr_library_sources(memfault_zephyr_ram_regions.c)
 zephyr_library_sources(memfault_platform_lock.c)
 zephyr_library_sources(memfault_platform_coredump_regions.c)
+zephyr_library_sources(memfault_platform_system_time.c)
 
 zephyr_library_sources_ifdef(CONFIG_MEMFAULT_HTTP_ENABLE memfault_platform_http.c)
 zephyr_library_sources_ifdef(CONFIG_MEMFAULT_SHELL memfault_demo_cli.c)
@@ -55,6 +56,14 @@ if (CONFIG_MEMFAULT_GNU_BUILD_ID_SOURCE_BUILTIN)
   # Override the default Zephyr setting which disables the GNU Build ID
   #   https://github.com/zephyrproject-rtos/zephyr/blob/d7ee114106eab485688223d97a49813d33b4cf21/cmake/linker/ld/target_base.cmake#L16
   zephyr_ld_options("-Wl,--build-id")
+endif()
+
+if (CONFIG_MEMFAULT_COMPACT_LOG)
+  # Enable support for compact logs by adding the required linker section
+  zephyr_linker_sources(SECTIONS memfault-compact-log.ld)
+  # Compact logs requires a minimum C standard of gnu11, due to use of GNU
+  # extensions and C11 features.
+  set_property(GLOBAL PROPERTY CSTD gnu11)
 endif()
 
 if(CONFIG_MEMFAULT_HEAP_STATS AND CONFIG_HEAP_MEM_POOL_SIZE GREATER 0)

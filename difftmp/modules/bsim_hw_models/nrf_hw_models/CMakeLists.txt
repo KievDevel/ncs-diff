@@ -23,6 +23,7 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
   # of those from the original nrfx.
   target_include_directories(zephyr_interface BEFORE INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/hal_replacements
   )
 
   zephyr_include_directories(
@@ -39,13 +40,20 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
     )
   elseif(CONFIG_SOC_SERIES_BSIM_NRF53X)
     file(STRINGS make_inc/5340_hw_files HW_MODEL_SRCS)
-    file(STRINGS make_inc/5340_hal_files HAL_SRCS)
-    # Pending definitions in Zephyr side for app and net core targets as well as of support
-    # for multi core native simulator based targets, by now we build the HAL as for the network core
-    set(VARIANT_FLAGS
+
+    if(CONFIG_BOARD_NRF5340BSIM_NRF5340_CPUNET)
+      file(STRINGS make_inc/5340_net_hal_files HAL_SRCS)
+      set(VARIANT_FLAGS
         -DNRF5340_XXAA_NETWORK
         -DNRF5340
-    )
+      )
+    elseif(CONFIG_BOARD_NRF5340BSIM_NRF5340_CPUAPP)
+      file(STRINGS make_inc/5340_app_hal_files HAL_SRCS)
+      set(VARIANT_FLAGS
+        -DNRF5340_XXAA_APPLICATION
+        -DNRF5340
+      )
+    endif()
   endif()
 
   # The nrfx HAL is built in the context of the embedded software

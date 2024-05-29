@@ -50,19 +50,25 @@ include(${COMMON_CMAKE_SOURCE_DIR}/chip_gn_args.cmake)
 include(${COMMON_CMAKE_SOURCE_DIR}/chip_gn.cmake)
 
 # Prepare compiler flags
+if (CHIP_CFLAGS)
+    matter_add_flags("${CHIP_CFLAGS}")
+endif()
+
 matter_add_flags(-D_POSIX_C_SOURCE=200809)
 
 if (CONFIG_ARM)
     matter_add_cflags(--specs=nosys.specs)
 endif()
 
-if (CONFIG_NORDIC_SECURITY_BACKEND)
+if (CONFIG_NRF_SECURITY)
     zephyr_include_directories($<TARGET_PROPERTY:mbedtls_external,INTERFACE_INCLUDE_DIRECTORIES>)
     zephyr_include_directories($<TARGET_PROPERTY:mbedcrypto_common,INTERFACE_INCLUDE_DIRECTORIES>)
     if(TARGET platform_cc3xx)
         zephyr_include_directories($<TARGET_PROPERTY:platform_cc3xx,INTERFACE_INCLUDE_DIRECTORIES>)
     endif()
     matter_add_flags(-DMBEDTLS_CONFIG_FILE=<nrf-config.h>)
+    matter_add_flags(-DMBEDTLS_PSA_CRYPTO_CONFIG_FILE=<nrf-psa-crypto-want-config.h>)
+    matter_add_flags(-DMBEDTLS_PSA_CRYPTO_USER_CONFIG_FILE=<nrf-psa-crypto-config.h>)
 elseif(CONFIG_MBEDTLS)
     zephyr_include_directories($<TARGET_PROPERTY:mbedTLS,INTERFACE_INCLUDE_DIRECTORIES>)
     zephyr_compile_definitions($<TARGET_PROPERTY:mbedTLS,INTERFACE_COMPILE_DEFINITIONS>)
@@ -82,7 +88,7 @@ matter_add_cxxflags(${ZEPHYR_GNU_CPP_STD})
 # Set up custom OpenThread configuration
 
 if (CONFIG_CHIP_OPENTHREAD_CONFIG)
-    get_filename_component(CHIP_OPENTHREAD_CONFIG 
+    get_filename_component(CHIP_OPENTHREAD_CONFIG
         ${CONFIG_CHIP_OPENTHREAD_CONFIG}
         REALPATH
         BASE_DIR ${CMAKE_SOURCE_DIR}
@@ -131,6 +137,10 @@ matter_add_gn_arg_bool  ("chip_automation_logging"                FALSE)
 matter_add_gn_arg_bool  ("chip_malloc_sys_heap"                   CONFIG_CHIP_MALLOC_SYS_HEAP)
 matter_add_gn_arg_bool  ("chip_enable_wifi"                       CONFIG_WIFI_NRF700X)
 matter_add_gn_arg_bool  ("chip_system_config_provide_statistics"  CONFIG_CHIP_STATISTICS)
+matter_add_gn_arg_bool  ("chip_enable_icd_server"                 CONFIG_CHIP_ENABLE_ICD_SUPPORT)
+matter_add_gn_arg_bool  ("chip_mdns_minimal"                      CONFIG_WIFI_NRF700X)
+matter_add_gn_arg_bool  ("chip_mdns_platform"                     CONFIG_NET_L2_OPENTHREAD)
+matter_add_gn_arg_bool  ("chip_enable_read_client"                CONFIG_CHIP_ENABLE_READ_CLIENT)
 
 if (CONFIG_CHIP_FACTORY_DATA)
     matter_add_gn_arg_bool("chip_use_transitional_commissionable_data_provider" FALSE)
@@ -144,16 +154,17 @@ if (CONFIG_CHIP_ROTATING_DEVICE_ID)
     matter_add_gn_arg_bool("chip_enable_additional_data_advertising" TRUE)
 endif()
 
-if (CONFIG_NET_L2_OPENTHREAD)
-    matter_add_gn_arg_string("chip_mdns" "platform")
-elseif(CONFIG_WIFI_NRF700X)
+if(CONFIG_WIFI_NRF700X)
     matter_add_gn_arg_string("chip_mdns" "minimal")
+elseif (CONFIG_NET_L2_OPENTHREAD)
+    matter_add_gn_arg_string("chip_mdns" "platform")
 else()
     matter_add_gn_arg_string("chip_mdns" "none")
 endif()
 
 if (CONFIG_CHIP_CRYPTO_PSA)
-    matter_add_gn_arg_string("chip_crypto" "psa")
+    matter_add_gn_arg_string("chip_crypto"             "psa")
+    matter_add_gn_arg_bool  ("chip_crypto_psa_spake2p" TRUE)
 endif()
 
 if (BOARD STREQUAL "native_posix")
@@ -184,14 +195,16 @@ matter_generate_args_tmp_file()
 # ==============================================================================
 
 matter_build(chip
-    LIB_SHELL   ${CONFIG_CHIP_LIB_SHELL}
     LIB_TESTS   ${CONFIG_CHIP_BUILD_TESTS}
     DEVICE_INFO_EXAMPLE_PROVIDER ${CONFIG_CHIP_EXAMPLE_DEVICE_INFO_PROVIDER}
     GN_DEPENDENCIES kernel
 )
 
 set_property(GLOBAL APPEND PROPERTY ZEPHYR_INTERFACE_LIBS chip)
+# Enable visibility of POSIX.1-2008 functions, such as strnlen
 target_compile_definitions(chip INTERFACE _POSIX_C_SOURCE=200809)
+# Make sure that kernel symbols that are only referenced by the Matter libraries are resolved.
+target_link_libraries(chip INTERFACE $<TARGET_FILE:kernel>)
 
 if (CONFIG_CHIP_MALLOC_SYS_HEAP_OVERRIDE)
     target_link_options(chip INTERFACE
@@ -203,6 +216,16 @@ if (CONFIG_CHIP_MALLOC_SYS_HEAP_OVERRIDE)
         -Wl,--wrap=_calloc_r
         -Wl,--wrap=_realloc_r
         -Wl,--wrap=_free_r
+    )
+endif()
+
+if (CONFIG_CHIP_LIB_SHELL)
+    # Force pulling chip::Shell::Engine::RunMainLoop() in the final binary.
+    # Without this workaround, the linker script does not process the shell and
+    # init objects defined in MainLoopZephyr.cpp unless the Matter library or
+    # the Matter shell library is linked using the '--whole-archive' flag.
+    target_link_options(chip INTERFACE
+        -Wl,-u,_ZN4chip5Shell6Engine11RunMainLoopEv
     )
 endif()
 

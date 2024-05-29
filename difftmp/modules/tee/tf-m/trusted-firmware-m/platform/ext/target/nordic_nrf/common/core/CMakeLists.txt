@@ -19,6 +19,15 @@ if (NOT NRF_BOARD_SELECTED)
         "Instead of '${TFM_PLATFORM}', choose e.g. '${hint}'.")
 endif()
 
+# At the time of writing there is no systematic way to identify which
+# NVM technology is used by the SoC from the Kconfig, so we just
+# hardcode this information here instead.
+if(PSA_API_TEST_TARGET STREQUAL nrf54l15)
+  set(HAS_RRAMC 1)
+else()
+  set(HAS_NVMC 1)
+endif()
+
 #========================= Platform dependencies ===============================#
 
 include(hal_nordic.cmake)
@@ -35,20 +44,6 @@ target_sources(tfm_s
     PRIVATE
         startup.c
 )
-
-if(NS)
-    target_add_scatter_file(tfm_ns
-        $<$<C_COMPILER_ID:GNU>:${PLATFORM_DIR}/ext/common/gcc/tfm_common_ns.ld>
-    )
-    target_link_libraries(CMSIS_5_tfm_ns
-        INTERFACE
-            CMSIS_5_RTX_V8MMN
-    )
-    target_sources(tfm_ns
-        PRIVATE
-            $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/startup.c>
-    )
-endif()
 
 if(BL2)
     target_add_scatter_file(bl2
@@ -77,13 +72,29 @@ target_include_directories(platform_s
         services/include
 )
 
+set(nvm_sources
+  $<$<BOOL:${TFM_PARTITION_INTERNAL_TRUSTED_STORAGE}>:${CMAKE_CURRENT_SOURCE_DIR}/cmsis_drivers/Driver_Flash.c>
+)
+
+if(HAS_RRAMC)
+  list(APPEND nvm_sources
+    ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_rramc.c
+  )
+elseif(HAS_NVMC)
+  list(APPEND nvm_sources
+    ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_nvmc.c
+  )
+else()
+  message(FATAL_ERROR "Unexpected device")
+endif()
+
 target_sources(platform_s
-    PRIVATE
-        cmsis_drivers/Driver_Flash.c
-        ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_nvmc.c
+  PRIVATE
+       ${nvm_sources}
         nrfx_glue.c
         native_drivers/mpu_armv8m_drv.c
         native_drivers/spu.c
+        $<$<BOOL:${TFM_EXCEPTION_INFO_DUMP}>:${CMAKE_CURRENT_SOURCE_DIR}/nrf_exception_info.c>
         $<$<OR:$<BOOL:${TFM_S_REG_TEST}>,$<BOOL:${TFM_NS_REG_TEST}>>:${CMAKE_CURRENT_SOURCE_DIR}/plat_test.c>
         $<$<BOOL:${TEST_PSA_API}>:${CMAKE_CURRENT_SOURCE_DIR}/pal_plat_test.c>
         $<$<BOOL:${ITS_ENCRYPTION}>:${CMAKE_CURRENT_SOURCE_DIR}/tfm_hal_its_encryption.c>
@@ -107,11 +118,6 @@ if(TFM_PARTITION_PLATFORM)
         PRIVATE
             services/src/tfm_platform_hal_ioctl.c
             services/src/tfm_ioctl_core_s_api.c
-    )
-
-    target_sources(platform_ns
-        PRIVATE
-            services/src/tfm_ioctl_core_ns_api.c
     )
 endif()
 
@@ -140,43 +146,14 @@ target_compile_definitions(platform_s
         $<$<BOOL:${ITS_ENCRYPTION}>:ITS_ENCRYPTION>
 )
 
-#========================= Platform Non-Secure ================================#
-
-target_sources(platform_ns
-    PRIVATE
-        cmsis_drivers/Driver_USART.c
-        ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_uarte.c
-        nrfx_glue.c
-        $<$<BOOL:${TEST_PSA_API}>:${CMAKE_CURRENT_SOURCE_DIR}/pal_plat_test.c>
-)
-
-target_include_directories(platform_ns
-    PUBLIC
-        .
-        ${HAL_NORDIC_PATH}/nrfx
-        ${HAL_NORDIC_PATH}/nrfx/mdk
-        ${HAL_NORDIC_PATH}/nrfx/drivers/include
-        common
-        ${PLATFORM_DIR}/..
-        services/include
-    PRIVATE
-        ${PLATFORM_DIR}/../interface/include
-)
-
-target_compile_definitions(platform_ns
-    PUBLIC
-        $<$<BOOL:${TEST_PSA_API}>:PSA_API_TEST_ENABLED>
-)
-
 #========================= Platform BL2 =======================================#
 
 if(BL2)
     target_sources(platform_bl2
         PRIVATE
-            cmsis_drivers/Driver_Flash.c
+            ${nvm_sources}
             cmsis_drivers/Driver_USART.c
             ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_uarte.c
-            ${HAL_NORDIC_PATH}/nrfx/drivers/src/nrfx_nvmc.c
             nrfx_glue.c
     )
     target_sources(bl2
@@ -198,10 +175,10 @@ endif()
 
 if (TFM_PARTITION_PLATFORM)
 install(FILES       services/include/tfm_ioctl_core_api.h
-        DESTINATION ${TFM_INSTALL_PATH}/interface/include)
+        DESTINATION ${INSTALL_INTERFACE_INC_DIR})
 
 install(FILES       services/src/tfm_ioctl_core_ns_api.c
-        DESTINATION ${TFM_INSTALL_PATH}/interface/src)
+        DESTINATION ${INSTALL_INTERFACE_SRC_DIR})
 
 endif()
 
@@ -220,16 +197,52 @@ target_sources(tfm_s
     $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/startup_${target}.c>
 )
 
-if(NS)
-    target_sources(tfm_ns
-        PRIVATE
-            $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/startup_${target}.c>
-    )
-endif()
-
 if(BL2)
     target_sources(bl2
         PRIVATE
             $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/startup_${target}.c>
     )
 endif()
+
+#========================= Files for building NS side platform ================#
+
+configure_file(config_nordic_nrf_spe.cmake.in
+               ${PROJECT_BINARY_DIR}/config_nordic_nrf_spe.cmake)
+
+install(FILES       ${PROJECT_BINARY_DIR}/config_nordic_nrf_spe.cmake
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/core
+)
+
+install(FILES       ${PLATFORM_DIR}/ext/driver/Driver_Common.h
+                    ${PLATFORM_DIR}/ext/driver/Driver_Flash.h
+                    ${PLATFORM_DIR}/ext/driver/Driver_USART.h
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/ext/driver)
+
+
+install(FILES       startup.c
+                    startup_${target}.c
+                    nrfx_glue.c
+                    pal_plat_test.c
+                    pal_plat_test.h
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/core
+)
+
+install(FILES       startup.h
+                    target_cfg.h
+                    nrfx_config.h
+                    ns/CMakeLists.txt
+                    config.cmake
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/core
+)
+
+install(DIRECTORY   native_drivers
+                    cmsis_drivers
+                    common
+                    nrfx
+                    services
+                    tests
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/common/core
+)
+
+install(FILES       ${PLATFORM_DIR}/ext/common/gcc/tfm_common_ns.ld
+        DESTINATION ${INSTALL_PLATFORM_NS_DIR}/linker_scripts)

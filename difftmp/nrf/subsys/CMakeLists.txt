@@ -22,6 +22,7 @@ if(NOT SYSBUILD)
 endif()
 
 add_subdirectory_ifdef(CONFIG_NRF_SECURITY nrf_security)
+add_subdirectory_ifdef(CONFIG_TRUSTED_STORAGE trusted_storage)
 
 add_subdirectory(net)
 add_subdirectory_ifdef(CONFIG_ESB		esb)
@@ -35,17 +36,7 @@ if (CONFIG_PCD OR CONFIG_PCD_APP OR CONFIG_PCD_NET)
 add_subdirectory(pcd)
 endif()
 
-if (CONFIG_MPSL AND NOT CONFIG_MPSL_FEM_ONLY)
-  add_subdirectory(mpsl/init)
-endif()
-
-if (CONFIG_MPSL_FEM OR CONFIG_MPSL_FEM_PIN_FORWARDER OR CONFIG_MPSL_FEM_API_AVAILABLE)
-  add_subdirectory(mpsl/fem)
-endif()
-
-if (CONFIG_MPSL_CX AND NOT CONFIG_MPSL_FEM_ONLY)
-  add_subdirectory(mpsl/cx)
-endif()
+add_subdirectory(mpsl)
 
 add_subdirectory_ifdef(CONFIG_ZIGBEE zigbee)
 add_subdirectory_ifdef(CONFIG_MGMT_FMFU mgmt/fmfu)
@@ -76,3 +67,4 @@ add_subdirectory_ifdef(CONFIG_NRF_802154_RADIO_DRIVER ieee802154)
 add_subdirectory_ifdef(CONFIG_NRF_DM dm)
 add_subdirectory_ifdef(CONFIG_EMDS emds)
 add_subdirectory_ifdef(CONFIG_NET_CORE_MONITOR net_core_monitor)
+add_subdirectory_ifdef(CONFIG_AUDIO_MODULE audio_module)

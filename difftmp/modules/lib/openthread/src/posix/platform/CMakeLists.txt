@@ -45,6 +45,13 @@ if(OT_DAEMON)
     set(OT_PLATFORM_DEFINES ${OT_PLATFORM_DEFINES} PARENT_SCOPE)
 endif()
 
+if(OT_MULTIPAN_RCP)
+    target_compile_definitions(ot-posix-config
+        INTERFACE "OPENTHREAD_CONFIG_MULTIPAN_RCP_ENABLE=1"
+    )
+endif()
+
+
 option(OT_POSIX_INSTALL_EXTERNAL_ROUTES "Install External Routes as IPv6 routes" ON)
 if(OT_POSIX_INSTALL_EXTERNAL_ROUTES)
     target_compile_definitions(ot-posix-config
@@ -117,8 +124,8 @@ endif()
 
 add_library(openthread-posix
     alarm.cpp
-    backbone.cpp
     backtrace.cpp
+    ble.cpp
     configuration.cpp
     config_file.cpp
     daemon.cpp
@@ -154,6 +161,7 @@ target_link_libraries(openthread-posix
         openthread-cli-ftd
         openthread-ftd
         openthread-hdlc
+        openthread-radio-spinel
         openthread-spinel-rcp
         openthread-url
         ot-config-ftd
@@ -177,6 +185,7 @@ target_compile_definitions(openthread-posix
     PRIVATE
         OPENTHREAD_FTD=1
         OPENTHREAD_MTD=0
+        OPENTHREAD_RADIO=0
 )
 
 target_compile_options(openthread-posix PRIVATE
@@ -188,6 +197,7 @@ target_include_directories(openthread-posix PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
+    ${OT_SPINEL_VENDOR_HOOK_SOURCE_DIR}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/src/posix/platform/include
 )
