@@ -5,8 +5,8 @@ const { COPYFILE_EXCL } = fs.constants;
 // todo: ignore headers,
 // todo: ignore binaries
 // todo: ignore docs
-const path1 = '/opt/nordic/ncs/v2.5.1';
-const path2 = '/opt/nordic/ncs/v2.6.0';
+const path1 = '/opt/nordic/ncs/v2.7.0-rc1';
+const path2 = '/opt/nordic/ncs/v2.7.0-rc2';
 const options: Options = {
     compareSize: true, // todo: back to true
     compareDate: false,
@@ -245,38 +245,38 @@ console.log('Without extension count: ', withoutExtensionCount);
 console.log('Size: ', resFiltered.diffSet.length);
 
 // copy files that are different from path 1
-try {
+// try {
+//
+//     const resForCopyFiles = {
+//         ...resFiltered,
+//         diffSet: resFiltered.diffSet
+//     }
+//
+//     resForCopyFiles.diffSet.map((diff) => {
+//         if (! diff.path2) return;
+//
+//         return fs.mkdirSync(`difftmp/${diff.relativePath}`, { recursive: true });
+//     });
+//
+//     resForCopyFiles.diffSet.map(async (diff) => {
+//         if (! diff.path2) return;
+//
+//         try {
+//             fs.copyFileSync(
+//                 `${diff.path2}/${diff.name2}`,
+//                 `./difftmp${diff.relativePath}/${diff.name2}`,
+//                 COPYFILE_EXCL
+//             )
+//         } catch (e) {
+//             // continue; will fail on symlinks
+//         }
+//     })
+// } catch (e) {
+//     console.error('Dirs creation error: ', e);
+//     throw e;
+// }
 
-    const resForCopyFiles = {
-        ...resFiltered,
-        diffSet: resFiltered.diffSet
-    }
-
-    resForCopyFiles.diffSet.map((diff) => {
-        if (! diff.path2) return;
-
-        return fs.mkdirSync(`difftmp/${diff.relativePath}`, { recursive: true });
-    });
-
-    resForCopyFiles.diffSet.map(async (diff) => {
-        if (! diff.path2) return;
-
-        try {
-            fs.copyFileSync(
-                `${diff.path2}/${diff.name2}`,
-                `./difftmp${diff.relativePath}/${diff.name2}`,
-                COPYFILE_EXCL
-            )
-        } catch (e) {
-            // continue; will fail on symlinks
-        }
-    })
-} catch (e) {
-    console.error('Dirs creation error: ', e);
-    throw e;
-}
-
-process.exit(1);
+//  process.exit(1);
 // copy files that are different in size
 try {
     const resForDifferentSize = {
